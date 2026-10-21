@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Виртуальная лаборатория — Киберкриминалистика</title>
+    <!-- Подключаем наш внешний файл стилей с поддержкой адаптивности для телефонов -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="bg-video-container">
+        <iframe src="https://www.youtube.com/embed/E8y3eDUMb4Q?autoplay=1&mute=1&loop=1&playlist=E8y3eDUMb4Q&controls=0&disablekb=1&modestbranding=1" allow="autoplay" title="Background Animation"></iframe>
+    </div>
+    <div class="bg-overlay"></div>
+
+    <!-- Модальное окно регистрации -->
+    <div id="auth-modal" class="modal-overlay">
+        <div class="modal-card">
+            <h2>Регистрация в системе</h2>
+            <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 24px;">Заполните данные для доступа к изолированной лаборатории.</p>
+            
+            <form onsubmit="handleRegister(event)">
+                <div class="form-group">
+                    <label>ФИО студента</label>
+                    <input type="text" id="fullname" placeholder="Турганбаев Батирбек" required>
+                </div>
+                <div class="form-group">
+                    <label>Номер телефона</label>
+                    <input type="tel" id="phone" placeholder="+998 (90) 123-45-67" required>
+                </div>
+                <div class="form-group">
+                    <label>Пластиковая карта</label>
+                    <input type="text" id="card" placeholder="8600 0000 0000 0000" maxlength="19" required>
+                </div>
+                <button type="submit" class="modal-btn">Зарегистрироваться</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Модальное окно реальной оплаты -->
+    <div id="payment-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-card" style="border-color: var(--accent-green);">
+            <h2 style="color: var(--accent-green);">Оплата подписки</h2>
+            <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 20px;">Продление доступа и сброс лимита трафика (20 ГБ).</p>
+            
+            <div style="background: #0f131d; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid var(--border-color);">
+                <div style="font-size: 13px; color: var(--text-muted);">Сумма к списанию:</div>
+                <div style="font-size: 22px; font-weight: 700; color: var(--accent-cyan);">100 000 сум</div>
+            </div>
+
+            <form onsubmit="processPayment(event)">
+                <div class="form-group">
+                    <label>Номер карты для списания</label>
+                    <input type="text" id="pay-card-input" readonly style="color: var(--accent-green);">
+                </div>
+                <button type="submit" class="modal-btn" style="background: linear-gradient(135deg, var(--accent-green), var(--accent-cyan));">Подтвердить и оплатить</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="container">
+        <h1 class="header-title">Cyber Forensics Lab</h1>
+        <p style="color: var(--text-muted);">Безопасная интерактивная полигон-среда для анализа угроз и тестирования на проникновение</p>
+
+        <!-- Кабинет ученика -->
+        <div class="user-status-card">
+            <div>
+                <span style="font-size: 14px; color: var(--text-muted);">Профиль ученика:</span>
+                <div id="display-username" style="font-weight: 700; font-size: 18px; color: var(--text-main);">Студент</div>
+            </div>
+            <div>
+                <div style="font-size: 13px; color: var(--text-muted); text-align: right;">Лимит трафика: <strong id="traffic-text">0.0 / 20 ГБ</strong></div>
+                <div class="traffic-bar-container">
+                    <div id="traffic-fill" class="traffic-bar-fill"></div>
+                </div>
+            </div>
+        </div>
+
+        <h2 style="font-size: 1.4rem; color: var(--text-main);">Доступные модули:</h2>
+        
+        <div id="labs-container" class="labs-grid">
+            <div style="color: var(--text-muted);">Загрузка доступных модулей...</div>
+        </div>
+
+        <!-- Секция активной работы -->
+        <div id="active-panel" class="active-lab-panel">
+            <h2 id="selected-lab-title" style="color: var(--accent-cyan); margin-top: 0;"></h2>
+            <p id="selected-lab-desc" style="color: var(--text-muted);"></p>
+            
+            <button id="start-btn" class="btn-action" onclick="launchVirtualLab()">Запустить виртуальную среду</button>
+
+            <!-- Блок блокировки при исчерпании лимита -->
+            <div id="paywall" class="paywall-box">
+                <h3 style="color: #ff4b4b; margin-top: 0;">⚠️ Лимит виртуального трафика (20 ГБ) исчерпан!</h3>
+                <p style="color: var(--text-muted); font-size: 14px;">Для продолжения работы необходима оплата подписки на 100 000 сум.</p>
+                <button class="paywall-btn" onclick="openPaymentModal()">Перейти к оплате 100 000 сум</button>
+            </div>
+
+            <!-- Экран виртуального полигона (Видеоурок) -->
+            <div id="virtual-screen" class="virtual-screen">
+                <div class="screen-header">
+                    <span id="vm-title-status">● ИЗОЛИРОВАННАЯ СРЕДА: АКТИВНО</span>
+                    <span style="color: var(--accent-cyan); font-weight: bold;">botya-sgb</span>
+                </div>
+                <div class="screen-body">
+                    <iframe id="lesson-video" src="" title="Cyber Lesson" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                </div>
+            </div>
+
+            <!-- Блок контрольной работы / написания кода -->
+            <div id="exam-box" class="exam-box">
+                <h3 id="exam-title">📝 Контрольная работа по итогам видеоурока</h3>
+                <div id="exam-content"></div>
+                <button class="btn-action" style="margin-top: 15px;" onclick="submitExam()">Сдать работу на проверку</button>
+                
+                <!-- Терминал ответа ИИ-Агента проверки -->
+                <div id="agent-response" class="agent-response-box"></div>
+
+                <!-- Чат с ИИ-Агентом поддержки -->
+                <div class="ai-chat-box">
+                    <h4>💬 Спросить ИИ-помощника по заданию</h4>
+                    <div id="ai-chat-output" class="ai-output">Задайте вопрос ИИ-агенту, если возникли трудности с решением...</div>
+                    <div class="ai-input-row">
+                        <input type="text" id="ai-question-input" placeholder="Например: Как работает цепочка кибератаки...">
+                        <button class="ai-send-btn" onclick="askAIAgent()">Спросить</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ЗАМЕНИТЕ НА ВАШУ ССЫЛКУ С RENDER (без слэша на конце)
+        const API_URL = "https://cyber-backend-xxxx.onrender.com";
+
+        let currentUsername = "Студент";
+        let selectedLabData = null;
+
+        const labDetails = {
+            1: {
+                video: "https://www.youtube.com/embed/M7DmpBdZ8l0?autoplay=1&controls=0&disablekb=1&modestbranding=1",
+                type: "test",
+                title: "Контрольный тест: Основы киберкриминалистики",
+                questions: [
+                    "1. Что включает в себя процесс реагирования на инциденты?",
+                    "2. Какова главная цель расследования инцидентов (форензики)?",
+                    "3. К чему может привести несвоевременное реагирование на рядовой инцидент?",
+                    "4. Назовите средний масштаб ущерба от киберинцидентов в мире.",
+                    "5. Какие данные анализируют киберкриминалисты при расследовании?",
+                    "6. Зачем нужен непрерывный мониторинг ИТ-инфраструктуры?",
+                    "7. Какую команду PowerShell можно использовать для поиска файлов по хешу?",
+                    "8. Что такое Compromise Assessment?",
+                    "9. Какой регламент или стандарт упоминается для реагирования на инциденты?",
+                    "10. Какая частая ошибка совершается сотрудниками ИТ/ИБ при расследовании?"
+                ]
+            },
+            2: {
+                video: "https://www.youtube.com/embed/GjwwYgZYXHE?autoplay=1&controls=0&disablekb=1&modestbranding=1",
+                type: "code",
+                title: "Практикум: Написание команд для анализа дампов памяти (Volatility)",
+                taskDescription: "Напишите команду утилиты Volatility для определения профиля операционной системы в загруженном дампе памяти:"
+            },
+            3: {
+                video: "https://www.youtube.com/embed/dpd3JPm5XWE?autoplay=1&controls=0&disablekb=1&modestbranding=1",
+                type: "code",
+                title: "Практикум: Как происходит кибератака? Хакерство как оно есть",
+                taskDescription: "Опишите ключевые этапы кибератаки (разведка, повышение привилегий, боковое перемещение) и методы защиты:"
+            }
+        };
+
+        function handleRegister(event) {
+            event.preventDefault();
+            currentUsername = document.getElementById('fullname').value;
+            const card = document.getElementById('card').value;
+
+            document.getElementById('display-username').innerText = currentUsername;
+            document.getElementById('pay-card-input').value = card;
+            document.getElementById('auth-modal').style.display = 'none';
+        }
+
+        async function fetchLabs() {
+            try {
+                const response = await fetch(`${API_URL}/labs`);
+                const labs = await response.json();
+                
+                const container = document.getElementById('labs-container');
+                container.innerHTML = '';
+
+                labs.forEach(lab => {
+                    const labCard = document.createElement('div');
+                    labCard.className = 'lab-card';
+                    labCard.id = `lab-${lab.id}`;
+                    labCard.innerHTML = `
+                        <h3>${lab.title}</h3>
+                        <span class="badge">Сложность: ${lab.difficulty}</span>
+                    `;
+                    labCard.onclick = () => selectLab(lab);
+                    container.appendChild(labCard);
+                });
+            } catch (error) {
+                document.getElementById('labs-container').innerHTML = 
+                    '<p style="color: #ff5555;">Не удалось подключиться к облачному бэкенду. Проверьте соединение.</p>';
+            }
+        }
+
+        function selectLab(lab) {
+            document.querySelectorAll('.lab-card').forEach(card => card.classList.remove('active'));
+            document.getElementById(`lab-${lab.id}`).classList.add('active');
+
+            selectedLabData = lab;
+            const panel = document.getElementById('active-panel');
+            
+            document.getElementById('selected-lab-title').innerText = lab.title;
+            document.getElementById('selected-lab-desc').innerText = `Уровень сложности: ${lab.difficulty}. Изолированная среда подготовлена.`;
+            
+            panel.style.display = 'block';
+            document.getElementById('virtual-screen').style.display = 'none';
+            document.getElementById('exam-box').style.display = 'none';
+            document.getElementById('agent-response').style.display = 'none';
+            document.getElementById('ai-chat-output').innerText = 'Задайте вопрос ИИ-агенту, если возникли трудности с решением...';
+
+            panel.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        async function launchVirtualLab() {
+            try {
+                const res = await fetch(`${API_URL}/consume_traffic`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: currentUsername, action_type: "launch_lab" })
+                });
+                const data = await res.json();
+                
+                updateTrafficUI(data.used_traffic);
+
+                if (data.blocked) {
+                    document.getElementById('virtual-screen').style.display = 'none';
+                    document.getElementById('exam-box').style.display = 'none';
+                    document.getElementById('start-btn').style.display = 'none';
+                    document.getElementById('paywall').style.display = 'block';
+                    return;
+                }
+
+                const details = labDetails[selectedLabData.id] || labDetails[1];
+                document.getElementById('lesson-video').src = details.video;
+
+                document.getElementById('exam-title').innerText = details.title;
+                const contentContainer = document.getElementById('exam-content');
+                contentContainer.innerHTML = '';
+                document.getElementById('agent-response').style.display = 'none';
+
+                if (details.type === 'test') {
+                    details.questions.forEach((q, index) => {
+                        contentContainer.innerHTML += `
+                            <div class="question-item">
+                                <strong>${q}</strong>
+                                <label><input type="radio" name="q${index}" value="a"> Вариант А: Локализация и устранение угрозы</label>
+                                <label><input type="radio" name="q${index}" value="b"> Вариант Б: Полное удаление системных файлов</label>
+                                <label><input type="radio" name="q${index}" value="c"> Вариант В: Игнорирование инцидента</label>
+                            </div>
+                        `;
+                    });
+                } else {
+                    contentContainer.innerHTML = `
+                        <p style="color: var(--text-muted); font-size: 14px;">${details.taskDescription}</p>
+                        <textarea id="user-code-input" class="code-input-area" placeholder="Введите ответ или анализ атаки здесь..."></textarea>
+                    `;
+                }
+
+                document.getElementById('virtual-screen').style.display = 'block';
+                document.getElementById('exam-box').style.display = 'block';
+                document.getElementById('virtual-screen').scrollIntoView({ behavior: 'smooth' });
+
+            } catch (err) {
+                alert('Ошибка связи с сервером при учете трафика.');
+            }
+        }
+
+        async function submitExam() {
+            const details = labDetails[selectedLabData.id];
+            let userAnswers;
+
+            if (details.type === 'test') {
+                userAnswers = [];
+                for (let i = 0; i < 10; i++) {
+                    const selected = document.querySelector(`input[name="q${i}"]:checked`);
+                    if (selected) userAnswers.push(selected.value);
+                }
+            } else {
+                const codeInput = document.getElementById('user-code-input');
+                userAnswers = codeInput ? codeInput.value : '';
+            }
+
+            try {
+                const trafficRes = await fetch(`${API_URL}/consume_traffic`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: currentUsername, action_type: "verify_task" })
+                });
+                const trafficData = await trafficRes.json();
+                updateTrafficUI(trafficData.used_traffic);
+
+                if (trafficData.blocked) {
+                    document.getElementById('virtual-screen').style.display = 'none';
+                    document.getElementById('exam-box').style.display = 'none';
+                    document.getElementById('start-btn').style.display = 'none';
+                    document.getElementById('paywall').style.display = 'block';
+                    return;
+                }
+
+                const response = await fetch(`${API_URL}/verify_submission`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        username: currentUsername,
+                        lab_id: selectedLabData.id,
+                        answers: userAnswers
+                    })
+                });
+
+                const result = await response.json();
+                const agentBox = document.getElementById('agent-response');
+                agentBox.style.display = 'block';
+
+                if (result.success) {
+                    agentBox.className = 'agent-response-box success';
+                    agentBox.innerHTML = `<strong>[Результат: ${result.score}]</strong><br>${result.feedback}`;
+                } else {
+                    agentBox.className = 'agent-response-box error';
+                    agentBox.innerHTML = `<strong>[Результат: ${result.score || 'Ошибка'}]</strong><br>${result.feedback}`;
+                }
+
+                agentBox.scrollIntoView({ behavior: 'smooth' });
+
+            } catch (err) {
+                alert('Не удалось связаться с агентом проверки.');
+            }
+        }
+
+        async function askAIAgent() {
+            const inputField = document.getElementById('ai-question-input');
+            const question = inputField.value.trim();
+            if (!question) return;
+
+            const outputBox = document.getElementById('ai-chat-output');
+            outputBox.innerText = '🤖 ИИ-Агент думает над ответом...';
+
+            try {
+                const response = await fetch(`${API_URL}/ai_helper`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        lab_id: selectedLabData ? selectedLabData.id : 1,
+                        question: question
+                    })
+                });
+
+                const data = await response.json();
+                outputBox.innerText = data.answer;
+                inputField.value = '';
+            } catch (err) {
+                outputBox.innerText = '⚠️ Ошибка соединения с ИИ-помощником.';
+            }
+        }
+
+        function updateTrafficUI(usedGB) {
+            const percent = (usedGB / 20) * 100;
+            document.getElementById('traffic-fill').style.width = percent + '%';
+            document.getElementById('traffic-text').innerText = usedGB.toFixed(1) + ' / 20 ГБ';
+        }
+
+        function openPaymentModal() {
+            document.getElementById('payment-modal').style.display = 'flex';
+        }
+
+        async function processPayment(event) {
+            event.preventDefault();
+            try {
+                const res = await fetch(`${API_URL}/pay_subscription`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: currentUsername })
+                });
+                const data = await res.json();
+
+                alert('Оплата 100 000 сум с вашей карты успешно проведена! Лимит трафика обнулен.');
+                updateTrafficUI(data.used_traffic);
+
+                document.getElementById('payment-modal').style.display = 'none';
+                document.getElementById('paywall').style.display = 'none';
+                document.getElementById('start-btn').style.display = 'inline-block';
+            } catch (err) {
+                alert('Ошибка проведения платежа через шлюз.');
+            }
+        }
+
+        fetchLabs();
+    </script>
+</body>
+</html>
